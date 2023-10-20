@@ -41,6 +41,7 @@ in a PowerShell terminal. On Linux, you can run
 
 ```
 export NODE_OPTIONS="--openssl-legacy-provider"
+```
 
 instead. DWC v3.5 will no longer require this work-around.
 
