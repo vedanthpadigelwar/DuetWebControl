@@ -36,7 +36,7 @@
 <script>
 'use strict'
 
-import { mapState } from 'vuex'
+import { mapMutations, mapState } from 'vuex'
 
 import Keyboard from 'simple-keyboard'
 import 'simple-keyboard/build/css/index.css'
@@ -50,7 +50,7 @@ export default {
 		}
 	},
 	mounted() {
-		window.disableCodeMirror = true;
+		this.oskEnabled();
 		window.addEventListener('focusin', this.inputFocused);
 		window.addEventListener('click', this.globalClick);
 	},
@@ -59,22 +59,25 @@ export default {
 		window.removeEventListener('click', this.globalClick);
 	},
 	methods: {
+		...mapMutations(["oskEnabled", "setBottomMargin"]),
 		inputFocused(e) {
-			if (e.target != this.input && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+			if (e.target !== this.input && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
 				this.input = e.target;
 				this.$nextTick(function() {
 					// Create a new keyboard instance
-					this.keyboard = new Keyboard({
-						mergeDisplay: true,
-						display: {
-							'{enter}': 'enter'
-						},
-						onChange: this.updateValue,
-						onKeyPress: this.onKeyPress,
-						newLineOnEnter: e.target instanceof HTMLTextAreaElement,
-						tabCharOnTab: e.target instanceof HTMLTextAreaElement,
-						theme: this.darkTheme ? 'hg-theme-default dark' : 'hg-theme-default'
-					});
+					if (!this.keyboard) {
+						this.keyboard = new Keyboard({
+							mergeDisplay: true,
+							display: {
+								'{enter}': 'enter'
+							},
+							onChange: this.updateValue,
+							onKeyPress: this.onKeyPress,
+							newLineOnEnter: e.target instanceof HTMLTextAreaElement,
+							tabCharOnTab: e.target instanceof HTMLTextAreaElement,
+							theme: this.darkTheme ? 'hg-theme-default dark' : 'hg-theme-default'
+						});
+					}
 					this.keyboard.setInput(e.target.value);
 
 					if (e.target.type === 'number') {
@@ -93,13 +96,12 @@ export default {
 					}
 
 					// Add some space at the bottom so the keyboard does not cover inputs 
-					document.body.style.marginBottom = `${this.$refs.keyboard.offsetHeight}px`;
-					window.oskOpen = true;
+					this.setBottomMargin(this.$refs.keyboard.offsetHeight);
 				});
 			}
 		},
 		globalClick() {
-			if (document.activeElement != this.input) {
+			if (document.activeElement !== this.input) {
 				// Hide the keyboard when a user clicks/taps outside the keyboard and selected input
 				this.hide();
 			}
@@ -107,8 +109,7 @@ export default {
 		hide() {
 			this.input = null;
 			this.keyboard = null;
-			document.body.style.marginBottom = '0px';
-			window.oskOpen = false;
+			this.setBottomMargin(0);
 		},
 		onInput(e) {
 			this.keyboard.setInput(e.target.value);
@@ -135,31 +136,36 @@ export default {
 				this.keyboard.setOptions({
 					layoutName: (currentLayout === 'default') ? 'shift' : 'default'
 				});
-			} else if (button === '{enter}' && this.input instanceof HTMLInputElement) {
-				// Emulate keydown, keypress, keyup in the right order
-				const kde = new KeyboardEvent('keydown', {
-					bubbles: true,
-					cancelable: true,
-					keyCode: 13
-				});
-				this.input.dispatchEvent(kde);
+			} else if (button === "{enter}") {
+				if (this.input instanceof HTMLInputElement) {
+					// Emulate keydown, keypress, keyup in the right order
+					const kde = new KeyboardEvent("keydown", {
+						bubbles: true,
+						cancelable: true,
+						keyCode: 13
+					});
+					this.input.dispatchEvent(kde);
 
-				const kpe = new KeyboardEvent('keypress', {
-					bubbles: true,
-					cancelable: true,
-					keyCode: 13
-				});
-				this.input.dispatchEvent(kpe);
+					const kpe = new KeyboardEvent("keypress", {
+						bubbles: true,
+						cancelable: true,
+						keyCode: 13
+					});
+					this.input.dispatchEvent(kpe);
 
-				const kue = new KeyboardEvent('keyup', {
-					bubbles: true,
-					cancelable: true,
-					keyCode: 13
-				});
-				this.input.dispatchEvent(kue);
+					const kue = new KeyboardEvent("keyup", {
+						bubbles: true,
+						cancelable: true,
+						keyCode: 13
+					});
+					this.input.dispatchEvent(kue);
 
-				// Wait a moment before closing the keyboard, else bad touch events may be invoked
-				setTimeout(this.hide.bind(this), 500);
+					// Wait a moment before closing the keyboard, else bad touch events may be invoked
+					setTimeout(this.hide.bind(this), 500);
+				} else if (this.input instanceof HTMLTextAreaElement) {
+					// Focus textarea again to keep the cursor visible
+					this.input.focus();
+				}
 			}
 		}
 	}

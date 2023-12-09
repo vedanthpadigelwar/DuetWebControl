@@ -2,10 +2,10 @@
 
 import Vue from 'vue'
 
-import { FileNotFoundError } from '../../utils/errors.js'
-import { getLocalSetting, setLocalSetting, removeLocalSetting } from '../../utils/localStorage.js'
-import patch from '../../utils/patch.js'
-import Path from '../../utils/path.js'
+import { FileNotFoundError } from '@/utils/errors.js'
+import { getLocalSetting, setLocalSetting, removeLocalSetting } from '@/utils/localStorage.js'
+import patch from '@/utils/patch.js'
+import Path from '@/utils/path.js'
 
 export default function(connector, pluginCacheFields) {
 	return {
@@ -85,13 +85,17 @@ export default function(connector, pluginCacheFields) {
 					commit('load', cache);
 				}
 			},
-			save({ state, rootState, dispatch }) {
+			save({ state, rootState, commit, dispatch }) {
 				if (!connector) {
 					return;
 				}
 
 				if (rootState.settings.cacheStorageLocal) {
-					setLocalSetting(`cache/${connector.hostname}`, state);
+					// If localStorage is full and the cache cannot be saved, clear file infos and try again
+					if (!setLocalSetting(`cache/${connector.hostname}`, state)) {
+						commit('clearFileInfo');
+						setLocalSetting(`cache/${connector.hostname}`, state);
+					}
 				} else {
 					removeLocalSetting(`cache/${connector.hostname}`);
 
@@ -113,7 +117,10 @@ export default function(connector, pluginCacheFields) {
 		mutations: {
 			load: (state, content) => patch(state, content),
 
-			addLastSentCode: (state, code) => state.lastSentCodes.push(code),
+			addLastSentCode(state, code) {
+                state.lastSentCodes = state.lastSentCodes.filter(item => item !== code);
+                state.lastSentCodes.push(code);
+            },
 			removeLastSentCode: (state, code) => state.lastSentCodes = state.lastSentCodes.filter(item => item !== code),
 
 			setFileInfo(state, { filename, fileInfo }) {

@@ -64,13 +64,14 @@ img {
 			{{ $t('panel.webcam.caption') }}
 		</v-card-title>
 
-		<v-card-text class="pt-0 img-container">
+		<v-card-text class="pa-0 img-container">
 			<v-responsive v-if="webcam.embedded" :aspect-ratio="16/9">
-				<iframe :src="webcam.url"></iframe>
+				<iframe :src="webcam.url" :class="classList"></iframe>
 			</v-responsive>
 
-			<a v-else :href="webcam.liveUrl"><img :alt="$t('panel.webcam.alt')" :src="url" :class="imgClasses"></a>
-
+			<a v-else :href="webcam.liveUrl ? webcam.liveUrl : 'javascript:void(0)'">
+				<img :alt="$t('panel.webcam.alt')" :src="active ? url : ''" :class="classList">
+			</a>
 		</v-card-text>
 	</v-card>
 </template>
@@ -78,48 +79,58 @@ img {
 <script>
 'use strict'
 
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 
 export default {
 	computed: {
 		...mapState('settings', ['webcam']),
-		imgClasses() {
-			const classes = [];
+		...mapGetters('machine', ['connector']),
+		classList() {
+			const result = [];
 
 			if (this.webcam.flip === 'x' || this.webcam.flip === 'both') {
-				classes.push('flip-x');
+				result.push('flip-x');
 			}
 			if (this.webcam.flip === 'y' || this.webcam.flip === 'both') {
-				classes.push('flip-y');
+				result.push('flip-y');
 			}
 
 			if (this.webcam.rotation === 90) {
-				classes.push('rotate-90');
+				result.push('rotate-90');
 			} else if (this.webcam.rotation === 180) {
-				classes.push('rotate-180');
+				result.push('rotate-180');
 			} else if (this.webcam.rotation === 270) {
-				classes.push('rotate-270');
+				result.push('rotate-270');
 			}
 
-			return classes;
+			return result;
 		}
 	},
 	data() {
 		return {
+			active: true,
 			updateTimer: null,
 			url: ''
 		}
 	},
+	activated() {
+		this.active = true;
+	},
+	deactivated() {
+		this.active = false;
+	},
 	methods: {
 		updateWebcam() {
-			let url = this.webcam.url;
-			if (this.webcam.useFix) {
-				url += "_" + Math.random();
-			} else {
-				if (url.indexOf("?") === -1) {
-					url += "?dummy=" + Math.random();
+			let url = this.webcam.url.replace('[HOSTNAME]', this.connector ? this.connector.hostname : location.hostname);
+			if (this.webcam.updateInterval > 0) {
+				if (this.webcam.useFix) {
+					url += "_" + Math.random();
 				} else {
-					url += "&dummy=" + Math.random();
+					if (url.indexOf("?") === -1) {
+						url += "?dummy=" + Math.random();
+					} else {
+						url += "&dummy=" + Math.random();
+					}
 				}
 			}
 			this.url = url;
@@ -128,8 +139,19 @@ export default {
 	mounted() {
 		if (!this.webcam.embedded) {
 			this.updateWebcam();
-			if (this.webcam.updateInterval) {
+			if (this.webcam.updateInterval > 0) {
 				this.updateTimer = setInterval(this.updateWebcam, this.webcam.updateInterval);
+			}
+		}
+	},
+	watch: {
+		webcam: {
+			deep: true,
+			handler() {
+				if (this.webcam.updateInterval === 0) {
+					// For persistent images we need to apply updates independently of the update loop
+					this.updateWebcam();
+				}
 			}
 		}
 	},

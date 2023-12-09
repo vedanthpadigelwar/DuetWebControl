@@ -14,6 +14,7 @@ At this time the following platforms are officially supported:
 * Duet 2 WiFi
 * Duet 2 Ethernet
 * Duet 3 MB 6HC
+* Duet 3 MB 6XD
 * Duet 3 Mini 5+ Ethernet
 * Duet 3 Mini 5+ WiFi
 
@@ -29,6 +30,21 @@ There are two build variants available:
 ```
 npm install
 ```
+
+Note that you need to set the `NODE_OPTIONS` environment variable to `--openssl-legacy-provider` in order to build DWC 3.4 and older with a recent Node version.
+On Windows, you can either define it globally or run
+
+```
+$env:NODE_OPTIONS="--openssl-legacy-provider"
+```
+
+in a PowerShell terminal. On Linux, you can run
+
+```
+export NODE_OPTIONS="--openssl-legacy-provider"
+```
+
+instead. DWC v3.5 will no longer require this work-around.
 
 ### Compiles and hot-reloads for development
 

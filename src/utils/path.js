@@ -145,6 +145,10 @@ export function stripMacroFilename(filename) {
 	return label;
 }
 
+export function escapeFilename(filename) {
+    return filename.replace(/'/g, "''");
+}
+
 const pathObj = {
 	filaments: '0:/filaments',
 	firmware: '0:/sys',
@@ -170,6 +174,7 @@ const pathObj = {
 	heightmapFile: 'heightmap.csv',
 
 	accelerometer: '0:/sys/accelerometer',
+	closedLoop: '0:/sys/closed-loop',
 
 	combine,
 	equals,

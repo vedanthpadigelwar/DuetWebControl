@@ -11,8 +11,8 @@
 
 			<v-list class="pt-0" dense>
 				<v-list-item v-if="!isRootDirectory" @click="goUp">
-					<v-list-item-avatar>
-						<v-icon class="list-icon mr-1 grey lighten-1 white--text">mdi-arrow-up</v-icon>
+					<v-list-item-avatar :size="32">
+						<v-icon small class="list-icon grey lighten-1 white--text">mdi-arrow-up</v-icon>
 					</v-list-item-avatar>
 
 					<v-list-item-content>
@@ -21,8 +21,8 @@
 				</v-list-item>
 
 				<v-list-item v-for="item in filelist" :key="item.name" @click="itemClick(item)">
-					<v-list-item-avatar>
-						<v-icon class="mr-1" :class="item.isDirectory ? 'grey lighten-1 white--text' : 'blue white--text'">
+					<v-list-item-avatar :size="32">
+						<v-icon small :class="item.isDirectory ? 'grey lighten-1 white--text' : 'blue white--text'">
 							{{ item.isDirectory ? 'mdi-folder' : 'mdi-file' }}
 						</v-icon>
 					</v-list-item-avatar>
@@ -51,7 +51,7 @@ import { mapState, mapGetters, mapActions } from 'vuex'
 
 import { DisconnectedError } from '../../utils/errors.js'
 import Events from '../../utils/events.js'
-import Path from '../../utils/path.js'
+import Path, { escapeFilename } from '../../utils/path.js'
 
 export default {
 	computed: {
@@ -122,7 +122,7 @@ export default {
 			} else if (!item.executing) {
 				item.executing = true;
 				try {
-					await this.sendCode(`M98 P"${filename}"`);
+					await this.sendCode(`M98 P"${escapeFilename(filename)}"`);
 				} catch (e) {
 					if (!(e instanceof DisconnectedError)) {
 						console.warn(e);

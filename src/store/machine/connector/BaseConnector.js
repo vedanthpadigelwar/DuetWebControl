@@ -4,7 +4,7 @@ import {
 	NotImplementedError,
 	NetworkError, TimeoutError, OperationCancelledError, OperationFailedError,
 	FileNotFoundError, InvalidPasswordError
-} from '../../../utils/errors.js'
+} from '@/utils/errors.js'
 
 export const defaultRequestTimeout = 4000;				// ms
 
@@ -28,7 +28,6 @@ class BaseConnector {
 		const xhr = new XMLHttpRequest();
 		xhr.open(method, internalURL);
 		xhr.responseType = 'text';
-		xhr.setRequestHeader('Content-Type', 'application/json');
 		xhr.timeout = defaultRequestTimeout;
 
 		return new Promise((resolve, reject) => {
@@ -43,7 +42,7 @@ class BaseConnector {
 					} catch (e) {
 						reject(e);
 					}
-				} else if (xhr.status === 401) {
+				} else if (xhr.status === 401 || xhr.status === 403) {
 					reject(new InvalidPasswordError());
 				} else if (xhr.status === 404) {
 					reject(new FileNotFoundError());
@@ -89,9 +88,6 @@ class BaseConnector {
 
 	// Connector type
 	type = 'unknown'
-
-	// High verbosity mode
-	verbose = false
 
 	// Constructor of this class
 	constructor(type, hostname) {
@@ -143,8 +139,9 @@ class BaseConnector {
 
 	// Send a G-/M-/T-code to the machine
 	// code: Code to send
+	// noWait: Don't wait for the code to finish
 	// Returns the code reply when finished
-	async sendCode(code) { throw new NotImplementedError('sendCode'); }
+	async sendCode({ code, noWait }) { throw new NotImplementedError('sendCode'); }
 
 	// Upload a file
 	// filename: Destination of the file
@@ -178,7 +175,8 @@ class BaseConnector {
 
 	// Get G-code file info and return an instance of FileInfo
 	// filename: Filename to parse
-	async getFileInfo(filename) { throw new NotImplementedError('getFileInfo'); }
+	// readThumbnailContent: Whether thumbnail content shall be parsed
+	async getFileInfo({ filename, readThumbnailContent }) { throw new NotImplementedError('getFileInfo'); }
 
 	// Install a plugin ZIP file
 	// zipFilename: Name of the ZIP file
